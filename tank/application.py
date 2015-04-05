@@ -1,6 +1,7 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
+import glib
 from tank.motors import Motors, DEFAULT_IP
 
 
@@ -9,6 +10,7 @@ class Application(object):
         self.motors = motors
         self.video = video
         self.ip_box = None
+        self.keystate = {k: False for k in ['w','s','a','d']}
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_title('WiFi Tank Remote')
@@ -31,26 +33,32 @@ class Application(object):
 
         self.motors.connect('connected', self.on_connection_state_change)
 
+        self.window.connect("key-press-event", self.on_key_down)
+        self.window.connect("key-release-event", self.on_key_up)
+        self.window.set_events(gtk.gdk.KEY_PRESS_MASK  | gtk.gdk.KEY_RELEASE_MASK)
+
         self.window.show()
+
+        glib.timeout_add(100, self.tick)
 
     def setup_direction_pad(self):
         box = gtk.VBox(False, 0)
         button_config = [
             [
-                ('Forward', ((Motors.LEFT, Motors.FORWARD),
-                             (Motors.RIGHT, Motors.FORWARD)))
+                ('Forward (w)', ((Motors.LEFT, Motors.FORWARD),
+                                 (Motors.RIGHT, Motors.FORWARD)))
             ],
             [
-                ('Left',    ((Motors.LEFT, Motors.BACK),
-                             (Motors.RIGHT, Motors.FORWARD))),
+                ('Left  (a)', ((Motors.LEFT, Motors.BACK),
+                               (Motors.RIGHT, Motors.FORWARD))),
                 ('Stop',   ((Motors.LEFT, Motors.STOP),
                             (Motors.RIGHT, Motors.STOP))),
-                ('Right',   ((Motors.LEFT, Motors.FORWARD),
-                             (Motors.RIGHT, Motors.BACK)))
+                ('Right (d)', ((Motors.LEFT, Motors.FORWARD),
+                               (Motors.RIGHT, Motors.BACK)))
             ],
             [
-                ('Back',    ((Motors.LEFT, Motors.BACK),
-                             (Motors.RIGHT, Motors.BACK)))
+                ('Back (s)', ((Motors.LEFT, Motors.BACK),
+                              (Motors.RIGHT, Motors.BACK)))
             ],
         ]
 
@@ -93,9 +101,42 @@ class Application(object):
         for cmd in data:
             self.motors.command(cmd[0], cmd[1])
 
+    def tick(self):
+        if self.motors.is_connected:
+            left_track = Motors.STOP
+            right_track = Motors.STOP
+            if self.keystate['w']:
+                left_track = Motors.FORWARD if not self.keystate['a'] else Motors.STOP
+                right_track = Motors.FORWARD if not self.keystate['d'] else Motors.STOP
+            elif self.keystate['s']:
+                left_track = Motors.BACK if not self.keystate['a'] else Motors.STOP
+                right_track = Motors.BACK if not self.keystate['d'] else Motors.STOP
+            elif self.keystate['a']:
+                left_track = Motors.BACK
+                right_track = Motors.FORWARD
+            elif self.keystate['d']:
+                left_track = Motors.FORWARD
+                right_track = Motors.BACK
+            self.motors.command(Motors.LEFT, left_track)
+            self.motors.command(Motors.RIGHT, right_track)
+        return True
+
+    def on_key_down(self, widget, data=None):
+        keyname = gtk.gdk.keyval_name(data.keyval)
+        if keyname in self.keystate.keys():
+            self.keystate[keyname] = True
+
+    def on_key_up(self, widget, data=None):
+        keyname = gtk.gdk.keyval_name(data.keyval)
+        if keyname in self.keystate.keys():
+            self.keystate[keyname] = False
+
     def on_connection_state_change(self, _, connected):
         self.direction_pad.set_sensitive(connected)
         self.connect_box.set_sensitive(not connected)
+        # Reset keys just in case
+        for k in self.keystate.keys():
+            self.keystate[k] = False
 
     def on_click_connect(self, _, data=None):
         self.motors.init_connection(self.ip_box.get_text())
