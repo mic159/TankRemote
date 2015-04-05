@@ -16,7 +16,6 @@ class Video(gobject.GObject):
         self.stream = None
         self.thread = None
         self.widget = None
-        self.buffer = ''
 
     def init_connection(self, ip):
         print 'Connecting to video on', ip
@@ -32,13 +31,18 @@ class Video(gobject.GObject):
 
         :return: generator of JPEG images
         '''
+        raw_buffer = ''
         while True:
-            self.buffer += self.stream.read(1034)
-            a = self.buffer.find('\xff\xd8')
-            b = self.buffer.find('\xff\xd9')
+            new = self.stream.read(1034)
+            if not new:
+                # Connection dropped
+                yield None
+            raw_buffer += new
+            a = raw_buffer.find('\xff\xd8')
+            b = raw_buffer.find('\xff\xd9')
             if a != -1 and b != -1:
-                frame = self.buffer[a:b+2]
-                self.buffer = self.buffer[b+2:]
+                frame = raw_buffer[a:b+2]
+                raw_buffer = raw_buffer[b+2:]
                 yield frame
 
 
@@ -55,7 +59,7 @@ class VideoThread(threading.Thread):
 
     def run(self):
         for frame in self.video.get_raw_frame():
-            if self.quit:
+            if self.quit or frame is None:
                 return
             loader = gtk.gdk.PixbufLoader('jpeg')
             loader.write(frame)
