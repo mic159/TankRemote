@@ -8,6 +8,7 @@ DEFAULT_IP = '10.10.1.1'
 class Motors(gobject.GObject):
     LEFT = 1
     RIGHT = 2
+    CAMERA = 3
 
     FORWARD = 1
     BACK = 2

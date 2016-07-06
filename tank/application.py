@@ -10,7 +10,7 @@ class Application(object):
         self.motors = motors
         self.video = video
         self.ip_box = None
-        self.keystate = {k: False for k in ['w','s','a','d']}
+        self.keystate = {k: False for k in ['Up','Down','Left','Right','a','z','x']}
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_title('WiFi Tank Remote')
@@ -45,21 +45,24 @@ class Application(object):
         box = gtk.VBox(False, 0)
         button_config = [
             [
-                ('Forward (w)', ((Motors.LEFT, Motors.FORWARD),
+                ('Forward (↑)', ((Motors.LEFT, Motors.FORWARD),
                                  (Motors.RIGHT, Motors.FORWARD)))
             ],
             [
-                ('Left  (a)', ((Motors.LEFT, Motors.BACK),
-                               (Motors.RIGHT, Motors.FORWARD))),
-                ('Stop',   ((Motors.LEFT, Motors.STOP),
-                            (Motors.RIGHT, Motors.STOP))),
-                ('Right (d)', ((Motors.LEFT, Motors.FORWARD),
+                ('Left (←)', ((Motors.LEFT, Motors.BACK),
+                              (Motors.RIGHT, Motors.FORWARD))),
+                ('Back (↓)', ((Motors.LEFT, Motors.BACK),
+                              (Motors.RIGHT, Motors.BACK))),
+                ('Right (→)', ((Motors.LEFT, Motors.FORWARD),
                                (Motors.RIGHT, Motors.BACK)))
             ],
             [
-                ('Back (s)', ((Motors.LEFT, Motors.BACK),
-                              (Motors.RIGHT, Motors.BACK)))
-            ],
+                ('Camera Up (a)', ((Motors.LEFT, Motors.FORWARD))),
+                ('Stop (x)', ((Motors.LEFT, Motors.STOP),
+                              (Motors.RIGHT, Motors.STOP),
+                              (Motors.CAMERA, Motors.STOP))),
+                ('Camera Down (z)', ((Motors.LEFT, Motors.BACK)))
+            ]
         ]
 
         for buttons_set in button_config:
@@ -105,6 +108,8 @@ class Application(object):
         if self.motors.is_connected:
             left_track = Motors.STOP
             right_track = Motors.STOP
+            camera_track = Motors.STOP
+
             if self.keystate['w']:
                 left_track = Motors.FORWARD if not self.keystate['a'] else Motors.STOP
                 right_track = Motors.FORWARD if not self.keystate['d'] else Motors.STOP
@@ -117,8 +122,15 @@ class Application(object):
             elif self.keystate['d']:
                 left_track = Motors.FORWARD
                 right_track = Motors.BACK
+
+            if self.keystate['a']:
+                camera_track = Motors.FORWARD
+            elif self.keystate['z']:
+                camera_track = Motors.BACK
+
             self.motors.command(Motors.LEFT, left_track)
             self.motors.command(Motors.RIGHT, right_track)
+            self.motors.command(Motors.CAMERA, camera_track)
         return True
 
     def on_key_down(self, widget, data=None):
