@@ -110,16 +110,16 @@ class Application(object):
             right_track = Motors.STOP
             camera_track = Motors.STOP
 
-            if self.keystate['w']:
-                left_track = Motors.FORWARD if not self.keystate['a'] else Motors.STOP
-                right_track = Motors.FORWARD if not self.keystate['d'] else Motors.STOP
-            elif self.keystate['s']:
-                left_track = Motors.BACK if not self.keystate['a'] else Motors.STOP
-                right_track = Motors.BACK if not self.keystate['d'] else Motors.STOP
-            elif self.keystate['a']:
+            if self.keystate['Up']:
+                left_track = Motors.FORWARD if not self.keystate['Left'] else Motors.STOP
+                right_track = Motors.FORWARD if not self.keystate['Right'] else Motors.STOP
+            elif self.keystate['Down']:
+                left_track = Motors.BACK if not self.keystate['Left'] else Motors.STOP
+                right_track = Motors.BACK if not self.keystate['Right'] else Motors.STOP
+            elif self.keystate['Left']:
                 left_track = Motors.BACK
                 right_track = Motors.FORWARD
-            elif self.keystate['d']:
+            elif self.keystate['Right']:
                 left_track = Motors.FORWARD
                 right_track = Motors.BACK
 
