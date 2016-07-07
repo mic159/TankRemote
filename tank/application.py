@@ -58,11 +58,11 @@ class Application(object):
                                (Motors.RIGHT, Motors.BACK)))
             ],
             [
-                ('Camera Up (a)', ((Motors.LEFT, Motors.FORWARD))),
+                ('Camera Up (a)', ((Motors.CAMERA, Motors.FORWARD),)),
                 ('Stop (x)', ((Motors.LEFT, Motors.STOP),
                               (Motors.RIGHT, Motors.STOP),
                               (Motors.CAMERA, Motors.STOP))),
-                ('Camera Down (z)', ((Motors.LEFT, Motors.BACK)))
+                ('Camera Down (z)', ((Motors.CAMERA, Motors.BACK),))
             ]
         ]
 
